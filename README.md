@@ -3,9 +3,12 @@ This is the implementation code of SDCNet, a GCN-based method, to efficiently pr
 
 
 ## Requirements
-Python 3.8 or higher  
+Python 3.8 or higher
+
 pandas 1.3.5
+
 numpy 1.21.2
+
 tensorflow 2.4.1    
 
 
@@ -13,14 +16,18 @@ tensorflow 2.4.1
 From the O’Neil dataset, the data from 31 cell lines are used to compare the performances of SDCNet and existing methods on SDC prediction. The data of the remaining eight cell lines are assembled as Transfer dataset to evaluate the performance of transfer learning on SDC prediction. For the other three datasets, all data are used to evaluate the generalization performance of the methods except some samples are excluded due to lack of the molecular information of drugs. The synergistic effect of the drug combinations are quantified through four types of synergy scores including Loewe additivity (Loewe), Bliss independence (Bliss), zero interaction potency (ZIP), and highest single agent (HSA).
 
 1. O'Neil dataset
+
 The experimental replicates of the drug combinations in the O’Neil dataset are averaged separately for various synergy types. 
+
 2. ALMANAC dataset
 3. CLOUD datset
 4. FORCINA datset
 
 
 ## Training
-python get_training.py 
+
+python get_training.py
+
 The most commonly used datset, O'Neil dataset with Loewe score, is used as an example to training the model. 
 
 |Argument|Default|Description|
