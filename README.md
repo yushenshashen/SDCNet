@@ -1,7 +1,7 @@
 # SDCNet
 This is the implementation code of SDCNet, a GCN-based method, to efficiently predict cell line-specific SDCs facilitating the discovery of rational combination therapies. It can learn and fuse the unique features of drug combinations in a specific cell line and their invariant patterns across different cell lines, and the common features can improve the prediction accuracy for each cell line. 
 
-![](https://github.com/yushenshashen/SDCNet/fig1.pdf SDCNet)
+![](https://github.com/yushenshashen/SDCNet/blob/main/fig1.pdf SDCNet)
 
 ## Requirements
 Python 3.8 or higher  
@@ -43,7 +43,7 @@ python get_sdcnet_bliss_load_pretrainmodel.py -modelfile ../trained_model/sdcnet
 python get_sdcnet_zip_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_zip/best_model.ckpt  
 python get_sdcnet_hsa_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_hsa/best_model.ckpt  
 
-We still use O'Neil dataset as example to make the prediction through the pretrained model. The size of pretrained models are too large, so they are accessible with baidu netdisk [baidu](https://yun.baidu.com/disk/main?from=homeFlow#/index?category=all).
+We still use O'Neil dataset as example to make the prediction through the pretrained model. The size of pretrained models are too large, so they are accessible with baidu netdisk [https://yun.baidu.com/disk/main?from=homeFlow#/index?category=all&path=%2FSDCNet_pretrain_models](https://yun.baidu.com/disk/main?from=homeFlow#/index?category=all&path=%2FSDCNet_pretrain_models).
 
 
 ## Reference
