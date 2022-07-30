@@ -22,9 +22,13 @@ The experimental replicates of the drug combinations in the O’Neil dataset are
 
 ## Training
 python get_sdcnet_loewe.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
+
 python get_sdcnet_bliss.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
+
 python get_sdcnet_zip.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
+
 python get_sdcnet_hsa.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
+
 The most commonly used datset, O'Neil dataset, is used as an example to training the model. The hyperparameters are what we used in the study.
 
 ## Default parameters of the scrips
@@ -37,11 +41,15 @@ The most commonly used datset, O'Neil dataset, is used as an example to training
 | weight_decay|  0|  Weight for L2 loss on embedding matrix. |
 | val_test_size|  0.1|  the rate of validation and test samples. |
 
-##predicting with pretrained model
+## predicting with pretrained model
 python get_sdcnet_loewe_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_loewe/best_model.ckpt
+
 python get_sdcnet_bliss_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_bliss/best_model.ckpt
+
 python get_sdcnet_zip_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_zip/best_model.ckpt
+
 python get_sdcnet_hsa_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_hsa/best_model.ckpt
+
 We still use O'Neil dataset as example to make the prediction through the pretrained model. The size of pretrained models are too large, so they are accessible with baidu netdisk.
 
 
@@ -50,7 +58,7 @@ Please cite our work if you find our code/paper is useful to your work.
 
 ```   
 @article{Zhang, 
-title={Predicting cell line-specific synergistic drug combinations through a relational graph convolutional network with attention mechanism}, 
+title={Predicting cell line-specific synergistic drug combinations through relational graph convolutional network with attention mechanism}, 
 author={Peng Zhang, Shikui Tu, Wen Zhang, Lei Xu}, 
 journal={Briefings in Bioinformatics}, 
 volume={}, 
