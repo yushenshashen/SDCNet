@@ -1,12 +1,12 @@
 # SDCNet
 This is the implementation code of SDCNet, a GCN-based method, to efficiently predict cell line-specific SDCs facilitating the discovery of rational combination therapies. It can learn and fuse the unique features of drug combinations in a specific cell line and their invariant patterns across different cell lines, and the common features can improve the prediction accuracy for each cell line. 
 
-![](fig1.pdf SDCNet)
+![](https://github.com/yushenshashen/SDCNet/fig1.pdf SDCNet)
 
 ## Requirements
 Python 3.8 or higher  
-pandas 1.3.5
-numpy 1.21.2
+pandas 1.3.5  
+numpy 1.21.2  
 tensorflow 2.4.1    
 
 
@@ -21,14 +21,10 @@ The experimental replicates of the drug combinations in the O’Neil dataset are
 
 
 ## Training
-python get_sdcnet_loewe.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
-
-python get_sdcnet_bliss.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
-
-python get_sdcnet_zip.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
-
-python get_sdcnet_hsa.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1
-
+python get_sdcnet_loewe.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1  
+python get_sdcnet_bliss.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1  
+python get_sdcnet_zip.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1  
+python get_sdcnet_hsa.py -learning_rate 0.001 -epochs 10000 -embedding_dim 320 -drop_out 0.2 -weight_decay 0 -val_test_size 0.1  
 The most commonly used datset, O'Neil dataset, is used as an example to training the model. The hyperparameters are what we used in the study.
 
 ## Default parameters of the scrips
@@ -41,16 +37,13 @@ The most commonly used datset, O'Neil dataset, is used as an example to training
 | weight_decay|  0|  Weight for L2 loss on embedding matrix. |
 | val_test_size|  0.1|  the rate of validation and test samples. |
 
-## predicting with pretrained model
-python get_sdcnet_loewe_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_loewe/best_model.ckpt
+## Predicting with pretrained model
+python get_sdcnet_loewe_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_loewe/best_model.ckpt  
+python get_sdcnet_bliss_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_bliss/best_model.ckpt  
+python get_sdcnet_zip_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_zip/best_model.ckpt  
+python get_sdcnet_hsa_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_hsa/best_model.ckpt  
 
-python get_sdcnet_bliss_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_bliss/best_model.ckpt
-
-python get_sdcnet_zip_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_zip/best_model.ckpt
-
-python get_sdcnet_hsa_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_hsa/best_model.ckpt
-
-We still use O'Neil dataset as example to make the prediction through the pretrained model. The size of pretrained models are too large, so they are accessible with baidu netdisk.
+We still use O'Neil dataset as example to make the prediction through the pretrained model. The size of pretrained models are too large, so they are accessible with baidu netdisk [baidu](https://yun.baidu.com/disk/main?from=homeFlow#/index?category=all).
 
 
 ## Reference
