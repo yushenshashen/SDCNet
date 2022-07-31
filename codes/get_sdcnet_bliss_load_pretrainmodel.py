@@ -2,7 +2,8 @@
 
 """
 Usage:
-nohup python get_training.py  >> log_training.txt 2>&1 &
+nohup python get_sdcnet_bliss_load_pretrainmodel.py  >> logs/log_sdcnet_bliss_load_pretrainmodel.txt 2>&1 &
+python get_sdcnet_bliss_load_pretrainmodel.py -modelfile ../trained_model/sdcnet_bliss/best_model.ckpt
 """
 
 import time
@@ -36,6 +37,7 @@ flags.DEFINE_integer('embedding_dim', 320, 'Number of the dim of embedding')
 flags.DEFINE_float('dropout', 0.2, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 0., 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('val_test_size', 0.1, 'the rate of validation and test samples.')
+flags.DEFINE_string('modelfile', '../trained_model/sdcnet_bliss/best_model.ckpt', 'the path of the trained model file')
 
 #some usefull funs
 def sigmoid(x):
@@ -60,7 +62,7 @@ def preprocess_graph(adj):
 # 1. load the data
 import numpy as np
 import pandas as pd
-data = pd.read_csv('../data/oneil_dataset_loewe.txt', sep='\t', header=0)
+data = pd.read_csv('../data/oneil_dataset_bliss.txt', sep='\t', header=0)
 data.columns = ['drugname1','drugname2','cell_line','synergy']
 # data.columns = ['drugname1','drugname2','cell_line', 'zip', 'bliss', 'loewe', 'hsa']
 
@@ -83,7 +85,7 @@ num_drug_nonzeros = drug_feat[1].shape[0]
 # if not os.path.isdir('logs'):
 #     os.makedirs('logs')
 
-resultspath = '../results_oneil/results_sdcnet_loewe'
+resultspath = '../results_oneil/results_sdcnet_bliss3'
 if not os.path.isdir(resultspath):
     os.makedirs(resultspath)
 
@@ -102,9 +104,11 @@ for idx in range(drugscount):
     diags_edges.append([idx, idx])
     diags_indexs.append( all_indexs.index([idx, idx]) )
 
-num_folds = 1
-# for foldidx in range(num_folds):
-foldidx = 0
+num_folds = 10
+all_stats = np.zeros((num_folds, 6))
+merged_stats = np.zeros((num_folds, 6))
+# for foldidx in range(1, num_folds):
+foldidx = 4
 print('processing fold ', foldidx)
 
 d_net1_norm = {}
@@ -126,9 +130,9 @@ for cellidx in range(cellscount):
     cellname = cellslist[cellidx]
     print('processing ', cellname)
     each_data = data[data['cell_line']==cellname]
-    net1_data = each_data[each_data['synergy'] >= 10]
-    net2_data = each_data[each_data['synergy'] < 0] 
-    net3_data = each_data[(each_data['synergy'] >= 0) & (each_data['synergy'] < 10)]
+    net1_data = each_data[each_data['synergy'] >= 3.68]
+    net2_data = each_data[each_data['synergy'] < -3.37] 
+    net3_data = each_data[(each_data['synergy'] >= -3.37) & (each_data['synergy'] < 3.68)]
     # if net2_data.shape[0] < 10: 
     #     num_need = 10 - net2_data.shape[0]
     #     net2_data = pd.concat([net2_data, net3_data[:num_need]])
@@ -138,12 +142,16 @@ for cellidx in range(cellscount):
         drugname1, drugname2, cell_line, synergy = each
         key = drugname1+ '&' + drugname2
         d_net1[key] = each
+        key = drugname2+ '&' + drugname1
+        d_net1[key] = each
     d_net2 = {}
     for each in net2_data.values:
         drugname1, drugname2, cell_line, synergy = each
         key = drugname1+ '&' + drugname2
-        key = drugname1 + '&' + drugname2
         d_net2[key] = each
+        key = drugname2 + '&' + drugname1
+        d_net2[key] = each
+
 
     adj_net1_mat = np.zeros((drugscount, drugscount))
     adj_net2_mat = np.zeros((drugscount, drugscount))
@@ -212,8 +220,8 @@ for cellidx in range(cellscount):
     ##
     net1_train_edges_symmetry = np.array([  [x[1],x[0]] for x in net1_train_edges ])
     net2_train_edges_symmetry = np.array([  [x[1],x[0]] for x in net2_train_edges ])
-    net1_train_edges = np.concatenate([net1_train_edges, net1_train_edges_symmetry])
-    net2_train_edges = np.concatenate([net2_train_edges, net2_train_edges_symmetry])
+    # net1_train_edges = np.concatenate([net1_train_edges, net1_train_edges_symmetry])
+    # net2_train_edges = np.concatenate([net2_train_edges, net2_train_edges_symmetry])
     # net1_train_index = [ all_indexs.index(x) for x in np.concatenate([net1_train_edges, net1_train_edges_symmetry]).tolist() ]
     # net2_train_index = [ all_indexs.index(x) for x in np.concatenate([ net2_train_edges, net2_train_edges_symmetry]).tolist()]
     # train_indexs = [net1_train_index, net2_train_index ]
@@ -256,55 +264,130 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 saver = tf.train.Saver(max_to_keep=1)
 
-best_acc = 0
-for epoch in range(FLAGS.epochs):
-    # epoch =  0
-    feed_dict = dict()
-    feed_dict.update({placeholders['features']: drug_feat})
-    feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-    feed_dict.update({placeholders['net1_adj_norm_'+str(cellidx)] : d_net1_norm[cellidx] for cellidx in range(cellscount)})
-    _, avg_cost = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
-    if epoch % 10 == 0:
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost))
-    feed_dict.update({placeholders['dropout']: 0})
-    res = sess.run( model.reconstructions, feed_dict=feed_dict)
+best_model_file = FLAGS.modelfile
+# best_model_file = '../trained_model/results_sdcnet_loewe/best_model.ckpt'
+# best_model_file = resultspath + '/best_model_' + str(foldidx) +'.ckpt'
+# best_acc = 0
+# for epoch in range(FLAGS.epochs):
+#     # epoch =  0
+#     feed_dict = dict()
+#     feed_dict.update({placeholders['features']: drug_feat})
+#     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+#     feed_dict.update({placeholders['net1_adj_norm_'+str(cellidx)] : d_net1_norm[cellidx] for cellidx in range(cellscount)})
+#     _, avg_cost = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
+#     if epoch % 10 == 0:
+#         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost))
+#     feed_dict.update({placeholders['dropout']: 0})
+#     res = sess.run( model.reconstructions, feed_dict=feed_dict)
 
-    merged_preds = []
-    merged_labels = []
-    cells_stats = np.zeros((cellscount, 6))
-    for cellidx in range(cellscount):
-        # cellidx = 0
-        preds_all = res[cellidx][ tuple( d_valid_edges[cellidx].T )].tolist()
-        # preds_all = [sigmoid(x) for x in preds_all]
-        preds_all_binary = [ 1 if x>=0.5 else 0 for x in preds_all ]
-        labels_all = d_valid_labels[cellidx]
-        merged_preds += preds_all
-        merged_labels += labels_all
-        #cal
-        roc_score = roc_auc_score(labels_all, preds_all)
-        precision, recall, _ = precision_recall_curve(labels_all, preds_all_binary)
-        auprc_score = auc(recall, precision)
-        accuracy = accuracy_score(preds_all_binary, labels_all)
-        f1 = f1_score(labels_all, preds_all_binary)
-        precision = precision_score(labels_all, preds_all_binary, zero_division=0)
-        recall = recall_score(labels_all, preds_all_binary)
-        cells_stats[cellidx] = [ roc_score, accuracy, auprc_score, f1, precision, recall ]
+#     merged_preds = []
+#     merged_labels = []
+#     # cells_stats = np.zeros((cellscount, 6))
+#     for cellidx in range(cellscount):
+#         # cellidx = 0
+#         preds_all = res[cellidx][ tuple( d_valid_edges[cellidx].T )].tolist()
+#         # preds_all = [sigmoid(x) for x in preds_all]
+#         preds_all_binary = [ 1 if x>=0.5 else 0 for x in preds_all ]
+#         labels_all = d_valid_labels[cellidx]
+#         merged_preds += preds_all
+#         merged_labels += labels_all
+#     #     #cal
+#     #     roc_score = roc_auc_score(labels_all, preds_all)
+#     #     precision, recall, _ = precision_recall_curve(labels_all, preds_all_binary)
+#     #     auprc_score = auc(recall, precision)
+#     #     accuracy = accuracy_score(preds_all_binary, labels_all)
+#     #     f1 = f1_score(labels_all, preds_all_binary)
+#     #     precision = precision_score(labels_all, preds_all_binary, zero_division=0)
+#     #     recall = recall_score(labels_all, preds_all_binary)
+#     #     cells_stats[cellidx] = [ roc_score, accuracy, auprc_score, f1, precision, recall ]
     
-    ave_auc, ave_auprc, ave_acc, ave_f1, ave_precision, ave_recall = cells_stats.mean(axis=0)
+#     # ave_auc, ave_auprc, ave_acc, ave_f1, ave_precision, ave_recall = cells_stats.mean(axis=0)
 
-    merged_preds_binary = [1 if x >= 0.5 else 0 for x in merged_preds ]
-    merged_auc = roc_auc_score(merged_labels, merged_preds)
-    precision, recall, _ = precision_recall_curve(merged_labels,merged_preds_binary)
-    merged_auprc = auc(recall, precision)
-    merged_acc = accuracy_score(merged_preds_binary, merged_labels)
-    merged_f1 = f1_score(merged_labels, merged_preds_binary)
-    merged_precision = precision_score(merged_labels,merged_preds_binary, zero_division=0)
-    merged_recall = recall_score(merged_labels, merged_preds_binary)
+#     merged_preds_binary = [1 if x >= 0.5 else 0 for x in merged_preds ]
+#     merged_auc = roc_auc_score(merged_labels, merged_preds)
+#     precision, recall, _ = precision_recall_curve(merged_labels,merged_preds_binary)
+#     merged_auprc = auc(recall, precision)
+#     merged_acc = accuracy_score(merged_preds_binary, merged_labels)
+#     merged_f1 = f1_score(merged_labels, merged_preds_binary)
+#     merged_precision = precision_score(merged_labels,merged_preds_binary, zero_division=0)
+#     merged_recall = recall_score(merged_labels, merged_preds_binary)
 
-    if best_acc < merged_acc:
-        best_acc = merged_acc
-    # if best_acc < ave_avcc:
-    #     best_acc = ave_acc
-        saver.save(sess, resultspath + '/best_model.ckpt')
+#     if best_acc < merged_acc:
+#         best_acc = merged_acc
+#     # if best_acc < ave_avcc:
+#     #     best_acc = ave_acc
+#         saver.save(sess, best_model_file)
 
+saver.restore(sess, best_model_file )
 
+feed_dict = dict()
+feed_dict.update({placeholders['features']: drug_feat})
+feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+feed_dict.update({placeholders['net1_adj_norm_'+str(cellidx)] : d_net1_norm[cellidx] for cellidx in range(cellscount)})
+
+##test predict
+feed_dict.update({placeholders['dropout']: 0})
+res = sess.run( model.reconstructions , feed_dict=feed_dict)
+
+merged_preds = []
+merged_labels = []
+# cells_stats = np.zeros((cellscount, 6))
+for cellidx in range(cellscount):
+    cellname = cellslist[cellidx]
+    preds_all = res[cellidx][ tuple( d_test_edges[cellidx].T )].tolist()
+    # preds_all = [sigmoid(x) for x in preds_all]
+    preds_all_binary = [ 1 if x>=0.5 else 0 for x in preds_all ]
+    labels_all = d_test_labels[cellidx]
+    merged_preds += preds_all
+    merged_labels += labels_all
+
+#     roc_score = roc_auc_score(labels_all, preds_all)
+#     precision, recall, _ = precision_recall_curve(labels_all, preds_all)
+#     auprc_score = auc(recall, precision)
+#     accuracy = accuracy_score(preds_all_binary, labels_all)
+#     f1 = f1_score(labels_all, preds_all_binary)
+#     precision = precision_score(labels_all, preds_all_binary, zero_division=0)
+#     recall = recall_score(labels_all, preds_all_binary)
+#     t = [ roc_score, accuracy, auprc_score, f1, precision, recall ]
+#     cells_stats[cellidx] = t
+
+# ave_auc, ave_auprc, ave_acc, ave_f1, ave_precision, ave_recall = cells_stats.mean(axis=0)
+
+# test_mean = cells_stats.mean(axis=0)
+# all_stats[foldidx] = test_mean
+
+# test_cell_stats = pd.DataFrame(cells_stats)
+# test_cell_stats.index = cellslist
+# test_std = test_cell_stats.std(axis=0)
+# test_cell_stats.loc['mean'] = test_mean
+# test_cell_stats.loc['std'] = test_std
+# test_cell_stats.to_csv(resultspath+ '/cell_stats_'+str(foldidx)+'.txt',sep='\t',header=None,index=True)
+
+##get merged stats
+merged_preds_binary = [ 1 if x >=0.5 else 0 for x in merged_preds ]
+merged_auc = roc_auc_score(merged_labels, merged_preds)
+precision, recall, _ = precision_recall_curve(merged_labels,merged_preds)
+merged_auprc = auc(recall, precision)
+merged_acc = accuracy_score(merged_preds_binary, merged_labels)
+merged_f1 = f1_score(merged_labels, merged_preds_binary)
+merged_precision = precision_score(merged_labels,merged_preds_binary, zero_division=0)
+merged_recall = recall_score(merged_labels, merged_preds_binary)
+merged_stats[foldidx] = [ merged_auc, merged_auprc, merged_acc, merged_f1, merged_precision, merged_recall ]
+pd.DataFrame([ merged_auc, merged_auprc, merged_acc, merged_f1, merged_precision, merged_recall ]).to_csv(resultspath + '/stats_'+str(foldidx)+'.txt',sep='\t',header=None, index=None)
+
+print('cv is over!')
+##all stats
+# all_stats = pd.DataFrame(all_stats)
+# stats_mean = all_stats.mean(axis=0)
+# stats_std = all_stats.std(axis=0)
+# all_stats.loc['mean'] = stats_mean
+# all_stats.loc['std'] = stats_std
+# all_stats.to_csv(resultspath+'/all_stats.txt', sep='\t', header=None, index=True)
+
+##all stats
+merged_stats = pd.DataFrame(merged_stats)
+stats_mean = merged_stats.mean(axis=0)
+stats_std = merged_stats.std(axis=0)
+merged_stats.loc['mean'] = stats_mean
+merged_stats.loc['std'] = stats_std
+merged_stats.to_csv(resultspath+'/merged_stats.txt', sep='\t', header=None, index=True)
