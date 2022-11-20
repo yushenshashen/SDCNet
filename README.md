@@ -1,7 +1,7 @@
 # SDCNet
 This is the implementation code of SDCNet, a GCN-based method, to efficiently predict cell line-specific SDCs facilitating the discovery of rational combination therapies. It can learn and fuse the unique features of drug combinations in a specific cell line and their invariant patterns across different cell lines, and the common features can improve the prediction accuracy for each cell line. 
 
-![the schematic of SDCNet](https://github.com/yushenshashen/SDCNet/fig1.png SDCNet)
+![the schematic of SDCNet](fig1.png SDCNet)
 
 ## Requirements
 Python 3.8 or higher  
